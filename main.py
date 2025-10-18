@@ -7,25 +7,26 @@ import os
 
 load_dotenv()
 
-
 app = FastAPI(title="Dynamic Profile Endpoint")
 
 class UserInfo(BaseModel):
-    email: EmailStr
-    name: str
-    stack: str
+    email: EmailStr = Field(..., example="<your email>")
+    name: str = Field(..., example="<your full name>")
+    stack: str = Field(..., example="<your backend stack>")
 
 class Profile(BaseModel):
-    status: str = "success"
+    status: str = Field(default="success", example="success")
     user: UserInfo
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    fact: str
-    
+    timestamp: datetime = Field(default_factory=datetime.utcnow, example="<current UTC time in ISO 8601 format>")
+    fact: str = Field(
+        ...,
+        example="<random cat fact from Cat Facts API>"
+    )
+
     class Config:
         from_attributes = True
 
 def get_cat_fact():
-
     url = os.getenv("CAT_FACT_URL")
     try:
         res = requests.get(url, timeout=5)
@@ -39,15 +40,12 @@ def root():
     return {"message": "Dynamic Profile Endpoint"}
 
 
-@app.get("/me")
+@app.get("/me", response_model=Profile)
 def profile():
-
-    user = UserInfo(email="itsemekaeze903@gmail.com", name="Emmanuel Eze", stack="Python/Fastapi")
-
+    user = UserInfo(
+        email="itsemekaeze903@gmail.com",
+        name="Emmanuel Eze",
+        stack="Python/Fastapi"
+    )
     profile = Profile(user=user, fact=get_cat_fact())
-    return {
-        "status": profile.status,
-        "user": profile.user,
-        "timestamp": profile.timestamp,
-        "fact": profile.fact
-    }
+    return profile
